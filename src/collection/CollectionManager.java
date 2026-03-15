@@ -5,10 +5,9 @@ import model.Country;
 
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
- * Класс для управления коллекцией объектов Person
+ * Менеджер для управления коллекцией объектов Person
  */
 public class CollectionManager {
     private final HashSet<Person> collection;
@@ -20,25 +19,30 @@ public class CollectionManager {
     }
 
     public CollectionManager(HashSet<Person> initialCollection) {
-        this.collection = initialCollection != null ? initialCollection : new HashSet<>();
+        if (initialCollection != null) {
+            this.collection = initialCollection;
+        } else {
+            this.collection = new HashSet<>();
+        }
         this.initializationDate = LocalDateTime.now();
         updateMaxId();
+    }
+
+    /**
+     * @return копия всех элементов коллекции
+     */
+    public HashSet<Person> getAll() {
+        return new HashSet<>(collection);
     }
 
     /**
      * @return информация о коллекции
      */
     public String getInfo() {
-        return String.format(
-                "Тип коллекции: %s\n" +
-                        "Дата инициализации: %s\n" +
-                        "Количество элементов: %d\n" +
-                        "Тип элементов: %s",
-                collection.getClass().getName(),
-                initializationDate,
-                collection.size(),
-                Person.class.getName()
-        );
+        return "Тип коллекции: " + collection.getClass().getName() + "\n" +
+                "Дата инициализации: " + initializationDate + "\n" +
+                "Количество элементов: " + collection.size() + "\n" +
+                "Тип элементов: " + Person.class.getName();
     }
 
     /**
@@ -56,56 +60,59 @@ public class CollectionManager {
     }
 
     /**
-     * @return все элементы коллекции
-     */
-    public HashSet<Person> getAll() {
-        return new HashSet<>(collection);
-    }
-
-    /**
-     * @return отсортированная коллекция
+     * @return отсортированная коллекция (по имени)
      */
     public List<Person> getSorted() {
-        return collection.stream()
-                .sorted()
-                .collect(Collectors.toList());
+        List<Person> sortedList = new ArrayList<>(collection);
+        Collections.sort(sortedList);
+        return sortedList;
     }
 
     /**
      * Получает элемент по ID
      * @param id ID элемента
-     * @return Optional с элементом или empty
+     * @return элемент или null, если не найден
      */
-    public Optional<Person> getById(Integer id) {
-        if (id == null) return Optional.empty();
-        return collection.stream()
-                .filter(p -> id.equals(p.getId()))
-                .findFirst();
+    public Person getById(Integer id) {
+        if (id == null) return null;
+
+        for (Person person : collection) {
+            if (id.equals(person.getId())) {
+                return person;
+            }
+        }
+        return null;
     }
 
     /**
      * Проверяет наличие элемента с указанным ID
+     * @param id ID для проверки
+     * @return true если элемент существует
      */
     public boolean containsId(Integer id) {
         if (id == null) return false;
-        return collection.stream()
-                .anyMatch(p -> id.equals(p.getId()));
+
+        for (Person person : collection) {
+            if (id.equals(person.getId())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
-     * @return минимальный элемент коллекции
+     * @return минимальный элемент (по имени)
      */
-    public Optional<Person> getMin() {
-        return collection.stream()
-                .min(Person::compareTo);
-    }
+    public Person getMin() {
+        if (collection.isEmpty()) return null;
 
-    /**
-     * @return максимальный элемент коллекции
-     */
-    public Optional<Person> getMax() {
-        return collection.stream()
-                .max(Person::compareTo);
+        Person minPerson = null;
+        for (Person person : collection) {
+            if (minPerson == null || person.compareTo(minPerson) < 0) {
+                minPerson = person;
+            }
+        }
+        return minPerson;
     }
 
     /**
@@ -114,29 +121,12 @@ public class CollectionManager {
      * @return true если элемент добавлен
      */
     public boolean add(Person person) {
-        if (person == null) {
-            return false;
-        }
+        if (person == null) return false;
+
         if (containsId(person.getId())) {
             person.setId(generateNewId());
         }
         return collection.add(person);
-    }
-
-    /**
-     * Добавляет элемент, если его день рождения раньше самого раннего в коллекции
-     */
-    public boolean addIfMin(Person person) {
-        if (person == null || person.getBirthday() == null) return false;
-
-        Optional<Person> oldest = collection.stream()
-                .filter(p -> p.getBirthday() != null)
-                .min(Comparator.comparing(Person::getBirthday));
-
-        if (oldest.isEmpty() || person.getBirthday().before(oldest.get().getBirthday())) {
-            return add(person);
-        }
-        return false;
     }
 
     /**
@@ -146,16 +136,14 @@ public class CollectionManager {
      * @return true если элемент обновлен
      */
     public boolean update(Integer id, Person newPerson) {
-        if (id == null || newPerson == null) {
-            return false;
-        }
-        Optional<Person> existing = getById(id);
-        if (existing.isPresent()) {
-            collection.remove(existing.get());
-            newPerson.setId(id);
-            return collection.add(newPerson);
-        }
-        return false;
+        if (id == null || newPerson == null) return false;
+
+        Person existing = getById(id);
+        if (existing == null) return false;
+
+        collection.remove(existing);
+        newPerson.setId(id);
+        return collection.add(newPerson);
     }
 
     /**
@@ -165,27 +153,16 @@ public class CollectionManager {
      */
     public boolean removeById(Integer id) {
         if (id == null) return false;
-        return collection.removeIf(p -> id.equals(p.getId()));
-    }
 
-    /**
-     * Удаляет все элементы с ростом больше заданного
-     */
-    public int removeGreater(Person person) {
-        if (person == null) return 0;
-        int initialSize = collection.size();
-        collection.removeIf(p -> p.getHeight() > person.getHeight());
-        return initialSize - collection.size();
-    }
-
-    /**
-     * Удаляет все элементы с ростом меньше заданного
-     */
-    public int removeLower(Person person) {
-        if (person == null) return 0;
-        int initialSize = collection.size();
-        collection.removeIf(p -> p.getHeight() < person.getHeight());
-        return initialSize - collection.size();
+        Iterator<Person> iterator = collection.iterator();
+        while (iterator.hasNext()) {
+            Person person = iterator.next();
+            if (id.equals(person.getId())) {
+                iterator.remove();
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
@@ -196,101 +173,144 @@ public class CollectionManager {
     }
 
     /**
-     * Считает количество элементов с национальностью, имеющей меньший порядковый номер в enum
+     * Добавляет элемент, если он меньше минимального (по имени)
+     * @param person элемент для добавления
+     * @return true если элемент добавлен
+     */
+    public boolean addIfMin(Person person) {
+        if (person == null) return false;
+
+        Person min = getMin();
+        if (min == null || person.compareTo(min) < 0) {
+            return add(person);
+        }
+        return false;
+    }
+
+    /**
+     * Удаляет все элементы больше заданного (по имени)
+     * @param person элемент для сравнения
+     * @return количество удаленных элементов
+     */
+    public int removeGreater(Person person) {
+        if (person == null) return 0;
+
+        int before = collection.size();
+
+        Iterator<Person> iterator = collection.iterator();
+        while (iterator.hasNext()) {
+            Person p = iterator.next();
+            if (p.compareTo(person) > 0) {
+                iterator.remove();
+            }
+        }
+
+        return before - collection.size();
+    }
+
+    /**
+     * Удаляет все элементы меньше заданного (по имени)
+     * @param person элемент для сравнения
+     * @return количество удаленных элементов
+     */
+    public int removeLower(Person person) {
+        if (person == null) return 0;
+
+        int before = collection.size();
+
+        Iterator<Person> iterator = collection.iterator();
+        while (iterator.hasNext()) {
+            Person p = iterator.next();
+            if (p.compareTo(person) < 0) {
+                iterator.remove();
+            }
+        }
+
+        return before - collection.size();
+    }
+
+    /**
+     * Считает количество элементов с национальностью меньше заданной
+     * @param nationality национальность для сравнения
+     * @return количество элементов
      */
     public long countLessThanNationality(Country nationality) {
         if (nationality == null) return 0;
-        return collection.stream()
-                .map(Person::getNationality)
-                .filter(Objects::nonNull)
-                .filter(n -> n.ordinal() < nationality.ordinal())
-                .count();
+
+        int count = 0;
+        for (Person person : collection) {
+            Country personNationality = person.getNationality();
+            if (personNationality != null && personNationality.ordinal() < nationality.ordinal()) {
+                count++;
+            }
+        }
+        return count;
     }
 
     /**
      * @return множество уникальных национальностей
      */
     public Set<Country> getUniqueNationalities() {
-        return collection.stream()
-                .map(Person::getNationality)
-                .filter(Objects::nonNull)
-                .collect(Collectors.toSet());
+        Set<Country> uniqueNationalities = new HashSet<>();
+
+        for (Person person : collection) {
+            Country nationality = person.getNationality();
+            if (nationality != null) {
+                uniqueNationalities.add(nationality);
+            }
+        }
+
+        return uniqueNationalities;
     }
 
     /**
      * @return список дней рождения в порядке убывания
      */
     public List<Date> getBirthdaysDescending() {
-        return collection.stream()
-                .map(Person::getBirthday)
-                .filter(Objects::nonNull)
-                .sorted(Comparator.reverseOrder())
-                .collect(Collectors.toList());
+        List<Date> birthdays = new ArrayList<>();
+
+        for (Person person : collection) {
+            Date birthday = person.getBirthday();
+            if (birthday != null) {
+                birthdays.add(birthday);
+            }
+        }
+
+        Collections.sort(birthdays, Collections.reverseOrder());
+        return birthdays;
     }
 
     /**
      * Генерирует новый уникальный ID
+     * @return новый ID
      */
     private Integer generateNewId() {
-        return collection.stream()
-                .mapToInt(Person::getId)
-                .max()
-                .orElse(0) + 1;
-    }
+        if (collection.isEmpty()) return 1;
 
-    /**
-     * Обновляет максимальный ID в Person
-     */
-    private void updateMaxId() {
-        collection.stream()
-                .mapToInt(Person::getId)
-                .max()
-                .ifPresent(Person::setNextId);
-    }
-
-    /**
-     * Валидирует всю коллекцию
-     * @return список ошибок
-     */
-    public List<String> validate() {
-        List<String> errors = new ArrayList<>();
+        int maxId = 0;
         for (Person person : collection) {
-            if (person == null) {
-                errors.add("Обнаружен null элемент");
-                continue;
-            }
-            try {
-                if (person.getId() == null || person.getId() <= 0) {
-                    errors.add("Элемент с некорректным ID: " + person);
-                }
-                long count = collection.stream()
-                        .filter(p -> p.getId().equals(person.getId()))
-                        .count();
-                if (count > 1) {
-                    errors.add("Обнаружены дубликаты ID: " + person.getId());
-                }
-            } catch (Exception e) {
-                errors.add("Ошибка валидации элемента: " + e.getMessage());
+            if (person.getId() > maxId) {
+                maxId = person.getId();
             }
         }
-        return errors;
+        return maxId + 1;
+    }
+
+    /**
+     * Обновляет максимальный ID в генераторе Person
+     */
+    private void updateMaxId() {
+        int maxId = 0;
+        for (Person person : collection) {
+            if (person.getId() > maxId) {
+                maxId = person.getId();
+            }
+        }
+        Person.setNextId(maxId + 1);
     }
 
     @Override
     public String toString() {
-        return String.format("CollectionManager{size=%d, type=HashSet<Person>}", collection.size());
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        CollectionManager that = (CollectionManager) o;
-        return Objects.equals(collection, that.collection);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(collection);
+        return "CollectionManager{size=" + collection.size() + "}";
     }
 }

@@ -5,8 +5,6 @@ import model.Country;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
-import java.util.Arrays;
-import java.util.stream.Collectors;
 
 /**
  * Класс для валидации вводимых данных
@@ -72,89 +70,71 @@ public class Validator {
     }
 
     /**
-     * Проверяет число с плавающей точкой double
-     */
-    public static Double validateDouble(String value, String fieldName, Double minValue, boolean canBeNull) {
-        if (value == null || value.trim().isEmpty()) {
-            if (canBeNull) {
-                return null;
-            }
-            throw new IllegalArgumentException(fieldName + " не может быть пустым");
-        }
-
-        try {
-            double doubleValue = Double.parseDouble(value.trim());
-
-            if (minValue != null && doubleValue <= minValue) {
-                throw new IllegalArgumentException(fieldName + " должно быть больше " + minValue);
-            }
-
-            return doubleValue;
-        } catch (NumberFormatException e) {
-            throw new IllegalArgumentException(fieldName + " должно быть числом");
-        }
-    }
-
-    /**
      * Проверяет дату
      */
-    public static LocalDate validateDate(String value, String fieldName, boolean canBeNull) {
+    public static LocalDate validateDate(String value) {
         if (value == null || value.trim().isEmpty()) {
-            if (canBeNull) {
-                return null;
-            }
-            throw new IllegalArgumentException(fieldName + " не может быть пустым");
+            return null;
         }
 
         try {
             return LocalDate.parse(value.trim());
         } catch (DateTimeParseException e) {
-            throw new IllegalArgumentException(fieldName + " должно быть в формате yyyy-MM-dd");
+            throw new IllegalArgumentException("Дата должна быть в формате yyyy-MM-dd");
         }
     }
 
     /**
-     * Проверяет enum Color
+     * Проверяет enum Color (может быть null)
      */
-    public static Color validateColor(String value, boolean canBeNull) {
+    public static Color validateColor(String value) {
         if (value == null || value.trim().isEmpty()) {
-            if (canBeNull) {
-                return null;
-            }
-            throw new IllegalArgumentException("Цвет волос не может быть пустым");
+            return null;
         }
 
         try {
             return Color.valueOf(value.trim().toUpperCase());
         } catch (IllegalArgumentException e) {
-            String available = Arrays.stream(Color.values())
-                    .map(Enum::name)
-                    .collect(Collectors.joining(", "));
+
+            StringBuilder available = new StringBuilder();
+            Color[] colors = Color.values();
+
+            for (int i = 0; i < colors.length; i++) {
+                available.append(colors[i].name());
+                if (i < colors.length - 1) {
+                    available.append(", ");
+                }
+            }
+
             throw new IllegalArgumentException("Доступные цвета: " + available);
         }
     }
 
     /**
-     * Проверяет enum Country
+     * Проверяет enum Country (может быть null)
      */
-    public static Country validateCountry(String value, boolean canBeNull) {
+    public static Country validateCountry(String value) {
         if (value == null || value.trim().isEmpty()) {
-            if (canBeNull) {
-                return null;
-            }
-            throw new IllegalArgumentException("Национальность не может быть пустой");
+            return null;
         }
 
         try {
             return Country.valueOf(value.trim().toUpperCase());
         } catch (IllegalArgumentException e) {
-            String available = Arrays.stream(Country.values())
-                    .map(Enum::name)
-                    .collect(Collectors.joining(", "));
+
+            StringBuilder available = new StringBuilder();
+            Country[] countries = Country.values();
+
+            for (int i = 0; i < countries.length; i++) {
+                available.append(countries[i].name());
+                if (i < countries.length - 1) {
+                    available.append(", ");
+                }
+            }
+
             throw new IllegalArgumentException("Доступные страны: " + available);
         }
     }
-
     /**
      * Проверяет long число
      */

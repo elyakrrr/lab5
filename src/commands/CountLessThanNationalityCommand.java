@@ -19,7 +19,7 @@ public class CountLessThanNationalityCommand extends BaseCommand {
         validateArgs(args, 1, "count_less_than_nationality nationality");
 
         try {
-            Country nationality = Validator.validateCountry(args[0], false);
+            Country nationality = Validator.validateCountry(args[0]);
             long count = collectionManager.countLessThanNationality(nationality);
             System.out.println("Количество элементов с национальностью меньше " + nationality + ": " + count);
         } catch (IllegalArgumentException e) {

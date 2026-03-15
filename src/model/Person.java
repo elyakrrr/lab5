@@ -183,7 +183,7 @@ public class Person implements Comparable<Person> {
 
     @Override
     public int compareTo(Person other) {
-        return this.name.compareTo(other.name);
+        return Float.compare(this.height, other.height);
     }
 
     @Override

@@ -4,8 +4,8 @@ import model.*;
 import utils.Validator;
 
 import java.io.*;
-import java.util.*;
 import java.time.LocalDate;
+import java.util.*;
 
 /**
  * Класс для чтения команд из скрипта
@@ -61,33 +61,22 @@ public class ScriptReader implements AutoCloseable {
         }
 
         try {
-            // Имя
             String name = Validator.validateNotEmpty(readLine(), "Имя");
-
-            // Координаты
             Coordinates coordinates = readCoordinatesFromScript();
 
-            // Рост
             String heightStr = readLine();
             float height = Validator.validateFloat(heightStr, "Рост", 0f, false);
 
-            // Дата рождения
             String birthdayStr = readLine();
-            Date birthday = null;
-            if (!birthdayStr.isEmpty()) {
-                LocalDate localDate = Validator.validateDate(birthdayStr, "Дата рождения", true);
-                birthday = localDate != null ? java.sql.Date.valueOf(localDate) : null;
-            }
+            LocalDate localDate = Validator.validateDate(birthdayStr);
+            Date birthday = localDate != null ? java.sql.Date.valueOf(localDate) : null;
 
-            // Цвет волос
             String hairColorStr = readLine();
-            Color hairColor = hairColorStr.isEmpty() ? null : Validator.validateColor(hairColorStr, true);
+            Color hairColor = Validator.validateColor(hairColorStr);
 
-            // Национальность
             String nationalityStr = readLine();
-            Country nationality = nationalityStr.isEmpty() ? null : Validator.validateCountry(nationalityStr, true);
+            Country nationality = Validator.validateCountry(nationalityStr);
 
-            // Локация
             Location location = readLocationFromScript();
 
             return new Person(name, coordinates, height, birthday, hairColor, nationality, location);
@@ -97,9 +86,6 @@ public class ScriptReader implements AutoCloseable {
         }
     }
 
-    /**
-     * Читает координаты из скрипта
-     */
     private Coordinates readCoordinatesFromScript() throws IOException {
         if (!scanner.hasNextLine()) {
             throw new IOException("Неожиданный конец файла при чтении Coordinates");
@@ -118,16 +104,13 @@ public class ScriptReader implements AutoCloseable {
         }
     }
 
-    /**
-     * Читает локацию из скрипта
-     */
     private Location readLocationFromScript() throws IOException {
         if (!scanner.hasNextLine()) {
             throw new IOException("Неожиданный конец файла при чтении Location");
         }
 
         String hasLocation = readLine();
-        if (hasLocation.equals("null")) {
+        if (hasLocation == null || hasLocation.equals("null")) {
             return null;
         }
 
@@ -139,16 +122,17 @@ public class ScriptReader implements AutoCloseable {
             Float x = Validator.validateFloat(xStr, "X локации", null, false);
             Long y = Validator.validateLong(yStr, "Y локации", null, false);
 
-            return new Location(x, y != null ? y : 0, name.isEmpty() ? null : name);
+            return new Location(x, y != null ? y : 0,
+                    (name == null || name.isEmpty() || "null".equals(name)) ? null : name);
         } catch (IllegalArgumentException e) {
             throw new IOException("Ошибка валидации локации: " + e.getMessage());
         }
     }
 
-    /**
-     * Закрывает сканер
-     */
+    @Override
     public void close() {
-        scanner.close();
+        if (scanner != null) {
+            scanner.close();
+        }
     }
 }

@@ -4,6 +4,9 @@ import collection.CollectionManager;
 import model.Country;
 
 import java.util.Set;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * Команда для вывода уникальных национальностей
@@ -26,8 +29,13 @@ public class PrintUniqueNationalityCommand extends BaseCommand {
         }
 
         System.out.println("*Уникальные национальности*");
-        nationalities.stream()
-                .sorted()
-                .forEach(System.out::println);
+
+        List<Country> sortedList = new ArrayList<>(nationalities);
+
+        Collections.sort(sortedList);
+
+        for (Country country : sortedList) {
+            System.out.println(country);
+        }
     }
 }

@@ -26,6 +26,8 @@ public class PrintFieldDescendingBirthdayCommand extends BaseCommand {
         }
 
         System.out.println("*Дни рождения (в порядке убывания)*");
-        birthdays.forEach(System.out::println);
+        for (Date birthday : birthdays) {
+            System.out.println(birthday);
+        }
     }
 }

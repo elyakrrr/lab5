@@ -1,6 +1,8 @@
 package commands;
 
 import collection.CollectionManager;
+import model.Person;
+import java.util.List;
 
 /**
  * Команда для вывода всех элементов коллекции
@@ -21,7 +23,10 @@ public class ShowCommand extends BaseCommand {
         }
 
         System.out.println("*Элементы коллекции*");
-        collectionManager.getSorted().forEach(System.out::println);
+        List<Person> sortedList = collectionManager.getSorted();
+        for (Person person : sortedList) {
+            System.out.println(person);
+        }
         System.out.println("Всего элементов: " + collectionManager.size());
     }
 }

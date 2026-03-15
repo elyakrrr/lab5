@@ -15,8 +15,7 @@ import java.text.ParseException;
  */
 public class XMLParser {
     private static final String XML_HEADER = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";
-    private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-    private static final SimpleDateFormat DATE_ONLY_FORMAT = new SimpleDateFormat("yyyy-MM-dd");
+    private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd");
 
     /**
      * Парсит XML строку в коллекцию Person
@@ -40,7 +39,6 @@ public class XMLParser {
                 Person person = parsePerson(personBlock);
                 collection.add(person);
             }
-
         } catch (Exception e) {
             throw new InvalidDataException("Ошибка парсинга XML: " + e.getMessage(), e);
         }
@@ -305,16 +303,7 @@ public class XMLParser {
         if (str == null || str.isEmpty() || "null".equals(str)) {
             return null;
         }
-
-        try {
-            return DATE_FORMAT.parse(str);
-        } catch (ParseException e1) {
-            try {
-                return DATE_ONLY_FORMAT.parse(str);
-            } catch (ParseException e2) {
-                throw new ParseException("Неверный формат даты: " + str, 0);
-            }
-        }
+        return DATE_FORMAT.parse(str);
     }
 
     /**

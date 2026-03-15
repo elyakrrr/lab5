@@ -61,16 +61,16 @@ public class UpdateCommand extends BaseCommand {
      * @param person объект Person для обновления (null если нужно прочитать из ввода)
      */
     private void processUpdate(Integer id, Person person) {
-        var existing = collectionManager.getById(id);
+        Person existing = collectionManager.getById(id);
 
-        if (existing.isEmpty()) {
+        if (existing == null) {
             System.out.println("Элемент с ID " + id + " не найден");
             return;
         }
 
         if (person == null) {
             System.out.println("Обновление элемента с ID " + id);
-            System.out.println("Текущие данные: " + existing.get());
+            System.out.println("Текущие данные: " + existing);
             person = inputReader.readPerson();
         }
 

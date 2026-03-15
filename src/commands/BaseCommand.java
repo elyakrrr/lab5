@@ -2,6 +2,7 @@ package commands;
 
 import collection.CollectionManager;
 import io.UserInputReader;
+import utils.Validator;
 
 /**
  * Абстрактный базовый класс для всех команд
@@ -42,13 +43,13 @@ public abstract class BaseCommand implements Command {
     }
 
     /**
-     * Парсит ID из аргументов
+     * Парсит ID из аргументов с использованием Validator
      */
     protected Integer parseId(String idStr) {
         try {
-            return Integer.parseInt(idStr);
-        } catch (NumberFormatException e) {
-            System.out.println("Ошибка: ID должен быть целым числом");
+            return Validator.validateInteger(idStr, "ID", 0, false);
+        } catch (IllegalArgumentException e) {
+            System.out.println(e.getMessage());
             throw new IllegalArgumentException();
         }
     }

@@ -119,6 +119,7 @@ public class CommandInvoker {
 
             String line;
             int lineNumber = 0;
+            int commandCount = 0;
 
             while ((line = scriptReader.readLine()) != null) {
                 lineNumber++;
@@ -137,16 +138,19 @@ public class CommandInvoker {
                     try {
                         Person person = scriptReader.readPersonFromScript();
                         handleCommandWithElement(commandName, cmdArgs, person);
+                        commandCount++;
                     } catch (IOException e) {
                         System.out.println(" Ошибка чтения элемента из скрипта: " + e.getMessage());
                         break;
                     }
                 } else {
                     executeCommand(line);
+                    commandCount++;
                 }
             }
 
             System.out.println("Скрипт " + fileName + " выполнен");
+            System.out.println("Выполнено команд: " + commandCount);
 
         } catch (FileNotFoundException e) {
             System.out.println("Ошибка: файл не найден - " + fileName);
@@ -185,7 +189,7 @@ public class CommandInvoker {
         } else if (command instanceof RemoveLowerCommand) {
             ((RemoveLowerCommand) command).executeWithElement(args, person);
         } else {
-            System.out.println(" [ERROR] Команда " + commandName + " не поддерживает элемент из скрипта");
+            System.out.println("Команда " + commandName + " не поддерживает элемент из скрипта");
         }
     }
 
