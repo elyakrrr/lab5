@@ -16,6 +16,7 @@ import java.text.ParseException;
 public class XMLParser {
     private static final String XML_HEADER = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";
     private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+    private static final SimpleDateFormat DATE_ONLY_FORMAT = new SimpleDateFormat("yyyy-MM-dd");
 
     /**
      * Парсит XML строку в коллекцию Person
@@ -31,28 +32,13 @@ public class XMLParser {
         }
 
         try {
-            // Удаляем XML заголовок если есть
             String content = xmlContent.replaceFirst("<\\?xml.*\\?>", "").trim();
-
-            // Находим все элементы person
-            int maxId = 0;
             String[] personBlocks = extractPersonBlocks(content);
 
             for (String personBlock : personBlocks) {
                 if (personBlock.trim().isEmpty()) continue;
-
                 Person person = parsePerson(personBlock);
                 collection.add(person);
-
-                // Отслеживаем максимальный ID для генератора
-                if (person.getId() > maxId) {
-                    maxId = person.getId();
-                }
-            }
-
-            // Устанавливаем следующий ID
-            if (maxId > 0) {
-                Person.setNextId(maxId);
             }
 
         } catch (Exception e) {
@@ -63,100 +49,9 @@ public class XMLParser {
     }
 
     /**
-     * Извлекает блоки person из XML
-     */
-    private String[] extractPersonBlocks(String xml) {
-        // Упрощенный парсинг - ищем между <person> и </person>
-        String[] blocks = xml.split("</person>");
-        for (int i = 0; i < blocks.length; i++) {
-            int startIndex = blocks[i].lastIndexOf("<person>");
-            if (startIndex >= 0) {
-                blocks[i] = blocks[i].substring(startIndex + 8).trim();
-            }
-        }
-        return blocks;
-    }
-
-    /**
-     * Парсит один блок person
-     */
-    private Person parsePerson(String personBlock) throws InvalidDataException {
-        Person person = new Person();
-
-        try {
-            // Парсим ID
-            person.setId(parseInt(extractTag(personBlock, "id")));
-
-            // Парсим имя
-            person.setName(extractTag(personBlock, "name"));
-
-            // Парсим координаты
-            String coordsBlock = extractTag(personBlock, "coordinates");
-            if (!coordsBlock.isEmpty()) {
-                Coordinates coords = new Coordinates();
-                coords.setX(parseInt(extractTag(coordsBlock, "x")));
-                coords.setY(parseInt(extractTag(coordsBlock, "y")));
-                person.setCoordinates(coords);
-            }
-
-            // Парсим дату создания
-            String dateStr = extractTag(personBlock, "creationDate");
-            if (!dateStr.isEmpty()) {
-                person.setCreationDate(LocalDate.parse(dateStr));
-            }
-
-            // Парсим рост
-            String heightStr = extractTag(personBlock, "height");
-            if (!heightStr.isEmpty()) {
-                person.setHeight(Float.parseFloat(heightStr));
-            }
-
-            // Парсим дату рождения
-            String birthdayStr = extractTag(personBlock, "birthday");
-            if (!birthdayStr.isEmpty() && !"null".equals(birthdayStr)) {
-                person.setBirthday(parseDate(birthdayStr));
-            }
-
-            // Парсим цвет волос
-            String hairColorStr = extractTag(personBlock, "hairColor");
-            if (!hairColorStr.isEmpty() && !"null".equals(hairColorStr)) {
-                person.setHairColor(Color.valueOf(hairColorStr));
-            }
-
-            // Парсим национальность
-            String nationalityStr = extractTag(personBlock, "nationality");
-            if (!nationalityStr.isEmpty() && !"null".equals(nationalityStr)) {
-                person.setNationality(Country.valueOf(nationalityStr));
-            }
-
-            // Парсим локацию
-            String locationBlock = extractTag(personBlock, "location");
-            if (!locationBlock.isEmpty()) {
-                Location location = new Location();
-                String xStr = extractTag(locationBlock, "x");
-                if (!xStr.isEmpty()) {
-                    location.setX(Float.parseFloat(xStr));
-                }
-                String yStr = extractTag(locationBlock, "y");
-                if (!yStr.isEmpty()) {
-                    location.setY(Long.parseLong(yStr));
-                }
-                String nameStr = extractTag(locationBlock, "name");
-                if (!nameStr.isEmpty() && !"null".equals(nameStr)) {
-                    location.setName(nameStr);
-                }
-                person.setLocation(location);
-            }
-
-        } catch (IllegalArgumentException | DateTimeParseException | ParseException e) {
-            throw new InvalidDataException("Ошибка парсинга данных: " + e.getMessage(), e);
-        }
-
-        return person;
-    }
-
-    /**
-     * Преобразует XML в строку
+     * Преобразует коллекцию в XML строку
+     * @param collection коллекция Person
+     * @return XML строка
      */
     public String parseToXML(HashSet<Person> collection) {
         StringBuilder xml = new StringBuilder();
@@ -168,42 +63,39 @@ public class XMLParser {
             xml.append("    <id>").append(person.getId()).append("</id>\n");
             xml.append("    <name>").append(escapeXml(person.getName())).append("</name>\n");
 
-            // Coordinates
+            Coordinates coords = person.getCoordinates();
             xml.append("    <coordinates>\n");
-            xml.append("      <x>").append(person.getCoordinates().getX()).append("</x>\n");
-            xml.append("      <y>").append(person.getCoordinates().getY()).append("</y>\n");
+            xml.append("      <x>").append(coords.getX()).append("</x>\n");
+            xml.append("      <y>").append(coords.getY()).append("</y>\n");
             xml.append("    </coordinates>\n");
 
             xml.append("    <creationDate>").append(person.getCreationDate()).append("</creationDate>\n");
             xml.append("    <height>").append(person.getHeight()).append("</height>\n");
 
-            // Birthday (может быть null)
             if (person.getBirthday() != null) {
                 xml.append("    <birthday>").append(formatDate(person.getBirthday())).append("</birthday>\n");
             } else {
                 xml.append("    <birthday>null</birthday>\n");
             }
 
-            // HairColor (может быть null)
             if (person.getHairColor() != null) {
                 xml.append("    <hairColor>").append(person.getHairColor()).append("</hairColor>\n");
             } else {
                 xml.append("    <hairColor>null</hairColor>\n");
             }
 
-            // Nationality (может быть null)
             if (person.getNationality() != null) {
                 xml.append("    <nationality>").append(person.getNationality()).append("</nationality>\n");
             } else {
                 xml.append("    <nationality>null</nationality>\n");
             }
 
-            // Location (может быть null)
             if (person.getLocation() != null) {
+                Location loc = person.getLocation();
                 xml.append("    <location>\n");
-                xml.append("      <x>").append(person.getLocation().getX()).append("</x>\n");
-                xml.append("      <y>").append(person.getLocation().getY()).append("</y>\n");
-                String name = person.getLocation().getName();
+                xml.append("      <x>").append(loc.getX()).append("</x>\n");
+                xml.append("      <y>").append(loc.getY()).append("</y>\n");
+                String name = loc.getName();
                 xml.append("      <name>").append(name != null ? escapeXml(name) : "null").append("</name>\n");
                 xml.append("    </location>\n");
             } else {
@@ -217,34 +109,233 @@ public class XMLParser {
         return xml.toString();
     }
 
-    // Вспомогательные методы
+    /**
+     * Извлекает блоки person из XML
+     * @param xml XML строка
+     * @return массив строк с блоками person
+     */
+    private String[] extractPersonBlocks(String xml) {
+        String[] blocks = xml.split("</person>");
+        for (int i = 0; i < blocks.length; i++) {
+            int startIndex = blocks[i].lastIndexOf("<person>");
+            if (startIndex >= 0) {
+                blocks[i] = blocks[i].substring(startIndex + 8).trim();
+            } else {
+                blocks[i] = "";
+            }
+        }
+        return blocks;
+    }
 
+    /**
+     * Парсит один блок person
+     * @param personBlock строка с XML одного person
+     * @return объект Person
+     * @throws InvalidDataException при ошибках парсинга
+     */
+    private Person parsePerson(String personBlock) throws InvalidDataException {
+        Person person = new Person();
+
+        try {
+            String nameStr = extractTag(personBlock, "name");
+            if (nameStr.isEmpty() || "null".equals(nameStr)) {
+                throw new InvalidDataException("Поле name не может быть null или пустым");
+            }
+            person.setName(nameStr);
+
+            String coordsBlock = extractTag(personBlock, "coordinates");
+            if (coordsBlock.isEmpty() || "null".equals(coordsBlock)) {
+                throw new InvalidDataException("Поле coordinates не может быть null");
+            }
+
+            Coordinates coords = new Coordinates();
+
+            String xStr = extractTag(coordsBlock, "x");
+            if (xStr.isEmpty() || "null".equals(xStr)) {
+                throw new InvalidDataException("Поле coordinates.x не может быть null");
+            }
+            try {
+                coords.setX(Integer.parseInt(xStr));
+            } catch (NumberFormatException e) {
+                throw new InvalidDataException("Поле coordinates.x должно быть числом");
+            }
+
+            String yStr = extractTag(coordsBlock, "y");
+            if (yStr.isEmpty() || "null".equals(yStr)) {
+                throw new InvalidDataException("Поле coordinates.y не может быть null");
+            }
+            try {
+                coords.setY(Integer.parseInt(yStr));
+            } catch (NumberFormatException e) {
+                throw new InvalidDataException("Поле coordinates.y должно быть числом");
+            }
+
+            person.setCoordinates(coords);
+
+            String heightStr = extractTag(personBlock, "height");
+            if (heightStr.isEmpty() || "null".equals(heightStr)) {
+                throw new InvalidDataException("Поле height не может быть null");
+            }
+            try {
+                person.setHeight(Float.parseFloat(heightStr));
+            } catch (NumberFormatException e) {
+                throw new InvalidDataException("Поле height должно быть числом");
+            }
+
+            String creationDateStr = extractTag(personBlock, "creationDate");
+            if (!creationDateStr.isEmpty() && !"null".equals(creationDateStr)) {
+                try {
+                    person.setCreationDate(LocalDate.parse(creationDateStr));
+                } catch (DateTimeParseException e) {
+                    throw new InvalidDataException("Неверный формат даты создания: " + creationDateStr);
+                }
+            }
+
+            String birthdayStr = extractTag(personBlock, "birthday");
+            if (!birthdayStr.isEmpty() && !"null".equals(birthdayStr)) {
+                try {
+                    person.setBirthday(parseDate(birthdayStr));
+                } catch (ParseException e) {
+                    throw new InvalidDataException("Неверный формат даты рождения: " + birthdayStr);
+                }
+            }
+
+            String hairColorStr = extractTag(personBlock, "hairColor");
+            if (!hairColorStr.isEmpty() && !"null".equals(hairColorStr)) {
+                try {
+                    person.setHairColor(Color.valueOf(hairColorStr));
+                } catch (IllegalArgumentException e) {
+                    throw new InvalidDataException("Неверное значение цвета волос: " + hairColorStr);
+                }
+            }
+
+            String nationalityStr = extractTag(personBlock, "nationality");
+            if (!nationalityStr.isEmpty() && !"null".equals(nationalityStr)) {
+                try {
+                    person.setNationality(Country.valueOf(nationalityStr));
+                } catch (IllegalArgumentException e) {
+                    throw new InvalidDataException("Неверное значение национальности: " + nationalityStr);
+                }
+            }
+
+            String locationBlock = extractTag(personBlock, "location");
+            if (!locationBlock.isEmpty() && !"null".equals(locationBlock)) {
+                try {
+                    Location location = new Location();
+
+                    String xLocStr = extractTag(locationBlock, "x");
+                    if (!xLocStr.isEmpty() && !"null".equals(xLocStr)) {
+                        try {
+                            location.setX(Float.parseFloat(xLocStr));
+                        } catch (NumberFormatException e) {
+                            throw new InvalidDataException("Поле location.x должно быть числом");
+                        }
+                    } else {
+                        throw new InvalidDataException("Поле location.x не может быть null");
+                    }
+
+                    String yLocStr = extractTag(locationBlock, "y");
+                    if (!yLocStr.isEmpty() && !"null".equals(yLocStr)) {
+                        try {
+                            location.setY(Long.parseLong(yLocStr));
+                        } catch (NumberFormatException e) {
+                            throw new InvalidDataException("Поле location.y должно быть числом");
+                        }
+                    } else {
+                        throw new InvalidDataException("Поле location.y не может быть null");
+                    }
+
+                    String nameLocStr = extractTag(locationBlock, "name");
+                    if (!"null".equals(nameLocStr)) {
+                        location.setName(nameLocStr.isEmpty() ? null : nameLocStr);
+                    }
+
+                    person.setLocation(location);
+                } catch (InvalidDataException e) {
+                    throw e;
+                } catch (Exception e) {
+                    throw new InvalidDataException("Ошибка парсинга location: " + e.getMessage());
+                }
+            }
+
+        } catch (InvalidDataException e) {
+            throw e;
+        } catch (IllegalArgumentException e) {
+            throw new InvalidDataException("Ошибка валидации данных: " + e.getMessage());
+        } catch (Exception e) {
+            throw new InvalidDataException("Ошибка парсинга данных: " + e.getMessage());
+        }
+
+        return person;
+    }
+
+    /**
+     * Извлекает содержимое тега
+     * @param xml XML строка
+     * @param tag имя тега
+     * @return содержимое тега (всегда не null, может быть пустым)
+     */
     private String extractTag(String xml, String tag) {
+        if (xml == null || tag == null) return "";
+
         String openTag = "<" + tag + ">";
         String closeTag = "</" + tag + ">";
 
         int start = xml.indexOf(openTag);
-        if (start == -1) return "";
+        if (start == -1) {
+            return "";
+        }
 
         int contentStart = start + openTag.length();
         int end = xml.indexOf(closeTag, contentStart);
-        if (end == -1) return "";
+        if (end == -1) {
+            return "";
+        }
 
         return xml.substring(contentStart, end).trim();
     }
 
-    private Integer parseInt(String str) {
-        return str.isEmpty() ? null : Integer.parseInt(str);
-    }
-
+    /**
+     * Парсит дату из строки
+     * @param str строка с датой
+     * @return объект Date или null
+     * @throws ParseException при ошибке парсинга
+     */
     private Date parseDate(String str) throws ParseException {
-        return str.isEmpty() ? null : DATE_FORMAT.parse(str);
+        if (str == null || str.isEmpty() || "null".equals(str)) {
+            return null;
+        }
+
+        try {
+            return DATE_FORMAT.parse(str);
+        } catch (ParseException e1) {
+            try {
+                return DATE_ONLY_FORMAT.parse(str);
+            } catch (ParseException e2) {
+                throw new ParseException("Неверный формат даты: " + str, 0);
+            }
+        }
     }
 
+    /**
+     * Форматирует дату в строку
+     * @param date объект Date
+     * @return строка с датой или "null"
+     */
     private String formatDate(Date date) {
-        return date != null ? DATE_FORMAT.format(date) : "null";
+        if (date == null) return "null";
+        try {
+            return DATE_FORMAT.format(date);
+        } catch (Exception e) {
+            return "null";
+        }
     }
 
+    /**
+     * Экранирует специальные символы XML
+     * @param text исходный текст
+     * @return текст с экранированными символами
+     */
     private String escapeXml(String text) {
         if (text == null) return "null";
         return text.replace("&", "&amp;")

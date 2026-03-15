@@ -10,7 +10,7 @@ import java.time.LocalDate;
 /**
  * Класс для чтения команд из скрипта
  */
-public class ScriptReader {
+public class ScriptReader implements AutoCloseable {
     private final Scanner scanner;
     private final Deque<String> scriptStack = new ArrayDeque<>();
     private static final int MAX_RECURSION_DEPTH = 10;

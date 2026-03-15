@@ -1,5 +1,7 @@
 package commands;
 
+import java.util.Comparator;
+
 /**
  * Команда для вывода справки
  */
@@ -14,10 +16,9 @@ public class HelpCommand extends BaseCommand {
     @Override
     public void execute(String[] args) {
         validateArgs(args, 0, "help");
-        System.out.println("\n=== Доступные команды ===");
+        System.out.println("*Доступные команды*");
         invoker.getCommands().values().stream()
-                .sorted((c1, c2) -> c1.getName().compareTo(c2.getName()))
+                .sorted(Comparator.comparing(Command::getName))
                 .forEach(System.out::println);
-        System.out.println();
     }
 }

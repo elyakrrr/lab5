@@ -95,6 +95,6 @@ public class Location {
 
     @Override
     public String toString() {
-        return String.format("Location{x=%.2f, y=%d, name='%s'}", x, y, name != null ? name : "null");
+        return String.format("Location {x=%.2f, y=%d, name='%s'}", x, y, name != null ? name : "null");
     }
 }

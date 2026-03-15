@@ -1,6 +1,7 @@
 package commands;
 
 import collection.CollectionManager;
+import io.FileManager;
 import io.UserInputReader;
 import io.ScriptReader;
 import model.Person;
@@ -17,13 +18,18 @@ public class CommandInvoker {
     private final Map<String, Command> commands;
     private final CollectionManager collectionManager;
     private final UserInputReader inputReader;
+    private final FileManager fileManager;
     private final Set<String> executingScripts;
     private boolean isRunning;
 
-    public CommandInvoker(CollectionManager collectionManager, UserInputReader inputReader) {
+    /**
+     * Конструктор с FileManager
+     */
+    public CommandInvoker(CollectionManager collectionManager, UserInputReader inputReader, FileManager fileManager) {
         this.commands = new HashMap<>();
         this.collectionManager = collectionManager;
         this.inputReader = inputReader;
+        this.fileManager = fileManager;
         this.executingScripts = new HashSet<>();
         this.isRunning = true;
         initializeCommands();
@@ -40,7 +46,7 @@ public class CommandInvoker {
         registerCommand(new UpdateCommand(collectionManager, inputReader));
         registerCommand(new RemoveByIdCommand(collectionManager, inputReader));
         registerCommand(new ClearCommand(collectionManager));
-        registerCommand(new SaveCommand(collectionManager));
+        registerCommand(new SaveCommand(collectionManager, fileManager));
         registerCommand(new ExecuteScriptCommand(this));
         registerCommand(new ExitCommand(this));
         registerCommand(new AddIfMinCommand(collectionManager, inputReader));

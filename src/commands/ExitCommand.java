@@ -15,7 +15,6 @@ public class ExitCommand extends BaseCommand {
     public void execute(String[] args) {
         validateArgs(args, 0, "exit");
 
-        System.out.println("Завершение программы...");
         invoker.exit();
     }
 }

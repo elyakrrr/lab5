@@ -1,6 +1,5 @@
 import collection.CollectionManager;
 import commands.CommandInvoker;
-import commands.SaveCommand;
 import io.FileManager;
 import io.UserInputReader;
 import exceptions.FileAccessException;
@@ -14,10 +13,10 @@ import java.util.Scanner;
  */
 public class App {
     private static final String ENV_VAR_NAME = "PERSON_DATA";
+    private static final String EMPTY_COLLECTION_MSG = "Будет создана пустая коллекция.";
 
     private CollectionManager collectionManager;
     private FileManager fileManager;
-    private UserInputReader inputReader;
     private CommandInvoker invoker;
     private boolean isInitialized;
 
@@ -32,54 +31,20 @@ public class App {
      * Инициализирует все компоненты приложения
      */
     public void initialize() {
-        System.out.println("Инициализация приложения...");
-
         try {
-            // 1. Инициализация FileManager
-            System.out.print("Загрузка файлового менеджера... ");
             fileManager = new FileManager(ENV_VAR_NAME);
-            System.out.println("OK");
-            System.out.println("   Файл данных: " + fileManager.getFileName());
-
-            // 2. Инициализация CollectionManager
-            System.out.print("Загрузка менеджера коллекции... ");
             collectionManager = new CollectionManager();
-            System.out.println("OK");
-
-            // 3. Загрузка данных из файла
-            System.out.print("Загрузка данных из файла... ");
             loadData();
-            System.out.println("OK");
-            System.out.println("   Загружено элементов: " + collectionManager.size());
 
-            // 4. Инициализация UserInputReader
-            System.out.print("Инициализация ввода... ");
-            inputReader = new UserInputReader();
-            System.out.println("OK");
-
-            // 5. Инициализация CommandInvoker
-            System.out.print("Инициализация команд... ");
-            invoker = new CommandInvoker(collectionManager, inputReader);
-
-            // Передаем FileManager в SaveCommand
-            SaveCommand saveCommand = (SaveCommand) invoker.getCommands().get("save");
-            if (saveCommand != null) {
-                saveCommand.setFileManager(fileManager);
-            }
-
-            System.out.println("OK");
+            UserInputReader inputReader = new UserInputReader();
+            invoker = new CommandInvoker(collectionManager, inputReader, fileManager);
 
             isInitialized = true;
-            System.out.println("Приложение успешно инициализировано!\n");
 
         } catch (FileAccessException e) {
-            System.err.println("ОШИБКА: " + e.getMessage());
-            System.err.println("Приложение не может быть запущено.");
-            System.exit(1);
+            handleFatalError(e.getMessage());
         } catch (Exception e) {
-            System.err.println("Неожиданная ошибка при инициализации: " + e.getMessage());
-            System.err.println("Приложение будет закрыто.");
-            System.exit(1);
+            handleFatalError("Неожиданная ошибка при инициализации: " + e.getMessage());
         }
     }
 
@@ -90,32 +55,25 @@ public class App {
         if (fileManager == null) return;
 
         try {
-            // Проверяем существование файла
             if (!fileManager.fileExists()) {
-                System.out.println("\n   Файл не существует. Будет создана пустая коллекция.");
+                printInfo("Файл не существует. " + EMPTY_COLLECTION_MSG);
                 return;
             }
 
-            // Проверяем права на чтение
             if (!fileManager.canRead()) {
-                System.out.println("\n   Предупреждение: нет прав на чтение файла. Будет создана пустая коллекция.");
+                printInfo("Нет прав на чтение файла. " + EMPTY_COLLECTION_MSG);
                 return;
             }
 
-            // Загружаем коллекцию
             var loadedCollection = fileManager.loadCollection();
-
-            // Добавляем загруженные элементы в менеджер коллекции
-            for (var person : loadedCollection) {
-                collectionManager.add(person);
-            }
+            loadedCollection.forEach(collectionManager::add);
 
         } catch (FileAccessException e) {
-            System.out.println("\n   Предупреждение: " + e.getMessage());
-            System.out.println("   Будет создана пустая коллекция.");
+            printError("Ошибка доступа к файлу: " + e.getMessage());
+            printInfo(EMPTY_COLLECTION_MSG);
         } catch (InvalidDataException e) {
-            System.out.println("\n   Предупреждение: ошибка в данных файла: " + e.getMessage());
-            System.out.println("   Будут загружены только корректные элементы.");
+            printWarning("Ошибка в данных файла: " + e.getMessage());
+            printInfo("Будут загружены только корректные элементы.");
         }
     }
 
@@ -124,48 +82,68 @@ public class App {
      */
     public void run() {
         if (!isInitialized) {
-            System.err.println("Ошибка: приложение не инициализировано");
+            handleFatalError("Приложение не инициализировано");
             return;
         }
 
-        Scanner scanner = new Scanner(System.in);
+        try (Scanner scanner = new Scanner(System.in)) {
+            printWelcomeMessage();
 
-        // Выводим приветствие
-        printWelcomeMessage();
+            while (invoker.isRunning()) {
+                System.out.print("> ");
+                String input = scanner.nextLine().trim();
 
-        // Основной цикл
-        while (invoker.isRunning()) {
-            System.out.print("> ");
-            String input = scanner.nextLine().trim();
-
-            if (!input.isEmpty()) {
-                invoker.executeCommand(input);
+                if (!input.isEmpty()) {
+                    invoker.executeCommand(input);
+                }
             }
         }
-
-        scanner.close();
     }
 
     /**
      * Выводит приветственное сообщение
      */
     private void printWelcomeMessage() {
-        System.out.println("╔════════════════════════════════════════════╗");
-        System.out.println("║     Управление коллекцией объектов Person  ║");
-        System.out.println("╚════════════════════════════════════════════╝");
+        System.out.println("*Управление коллекцией объектов Person*");
         System.out.println("Введите 'help' для списка команд");
-        System.out.println("Введите 'exit' для выхода\n");
+        System.out.println("Введите 'exit' для выхода");
     }
 
     /**
      * Завершает приложение
      */
     public void shutdown() {
-        System.out.println("\nЗавершение работы приложения...");
+        printInfo("Завершение работы приложения...");
+        printInfo("Приложение завершено.");
+    }
 
-        // Здесь можно добавить дополнительные действия при завершении
-        // Например, автосохранение, если потребуется
+    /**
+     * Обработка фатальных ошибок с завершением программы
+     */
+    private void handleFatalError(String message) {
+        System.err.println("ОШИБКА: " + message);
+        System.err.println("Приложение не может быть запущено.");
+        System.exit(1);
+    }
 
-        System.out.println("Приложение завершено.");
+    /**
+     * Вывод информационных сообщений с единым форматированием
+     */
+    private void printInfo(String message) {
+        System.out.println("\n   " + message);
+    }
+
+    /**
+     * Вывод предупреждений с единым форматированием
+     */
+    private void printWarning(String message) {
+        System.out.println("\n   ПРЕДУПРЕЖДЕНИЕ: " + message);
+    }
+
+    /**
+     * Вывод ошибок с единым форматированием
+     */
+    private void printError(String message) {
+        System.err.println("\n   ОШИБКА: " + message);
     }
 }

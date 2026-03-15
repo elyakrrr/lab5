@@ -25,7 +25,7 @@ public class PrintUniqueNationalityCommand extends BaseCommand {
             return;
         }
 
-        System.out.println("\n=== Уникальные национальности ===");
+        System.out.println("*Уникальные национальности*");
         nationalities.stream()
                 .sorted()
                 .forEach(System.out::println);

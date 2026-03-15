@@ -83,6 +83,6 @@ public class Coordinates {
 
     @Override
     public String toString() {
-        return String.format("Coordinates{x=%d, y=%d}", x, y);
+        return String.format("Coordinates {x=%d, y=%d}", x, y);
     }
 }

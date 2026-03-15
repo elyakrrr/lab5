@@ -8,24 +8,21 @@ import exceptions.FileAccessException;
  * Команда для сохранения коллекции в файл
  */
 public class SaveCommand extends BaseCommand {
-    private FileManager fileManager;
+    private final FileManager fileManager;
 
-    public SaveCommand(CollectionManager collectionManager) {
+    /**
+     * Конструктор команды save
+     * @param collectionManager менеджер коллекции
+     * @param fileManager менеджер файлов для сохранения
+     */
+    public SaveCommand(CollectionManager collectionManager, FileManager fileManager) {
         super(collectionManager, null, "save", "сохранить коллекцию в файл");
-    }
-
-    public void setFileManager(FileManager fileManager) {
         this.fileManager = fileManager;
     }
 
     @Override
     public void execute(String[] args) {
         validateArgs(args, 0, "save");
-
-        if (fileManager == null) {
-            System.out.println("Ошибка: FileManager не инициализирован");
-            return;
-        }
 
         try {
             fileManager.saveCollection(collectionManager.getAll());

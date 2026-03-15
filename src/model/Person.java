@@ -11,15 +11,15 @@ import java.util.Objects;
 public class Person implements Comparable<Person> {
     private static int nextId = 1;
 
-    private Integer id; // Поле не может быть null, > 0, уникальное, генерируется автоматически
-    private String name; // Поле не может быть null, не пустое
-    private Coordinates coordinates; // Поле не может быть null
-    private java.time.LocalDate creationDate; // Поле не может быть null, генерируется автоматически
-    private float height; // Значение поля должно быть больше 0
-    private java.util.Date birthday; // Поле может быть null
-    private Color hairColor; // Поле может быть null
-    private Country nationality; // Поле может быть null
-    private Location location; // Поле может быть null
+    private Integer id;
+    private String name;
+    private Coordinates coordinates;
+    private LocalDate creationDate;
+    private float height;
+    private Date birthday;
+    private Color hairColor;
+    private Country nationality;
+    private Location location;
 
     /**
      * Конструктор для создания человека
@@ -33,17 +33,16 @@ public class Person implements Comparable<Person> {
      */
     public Person(String name, Coordinates coordinates, float height,
                   Date birthday, Color hairColor, Country nationality, Location location) {
-        // Автоматическая генерация id и creationDate
         this.id = generateId();
         this.creationDate = LocalDate.now();
 
         setName(name);
         setCoordinates(coordinates);
         setHeight(height);
-        this.birthday = birthday;
-        this.hairColor = hairColor;
-        this.nationality = nationality;
-        this.location = location;
+        setBirthday(birthday);
+        setHairColor(hairColor);
+        setNationality(nationality);
+        setLocation(location);
     }
 
     /**
@@ -63,13 +62,6 @@ public class Person implements Comparable<Person> {
     }
 
     /**
-     * Сбрасывает генератор ID (для тестирования)
-     */
-    public static void resetIdGenerator() {
-        nextId = 1;
-    }
-
-    /**
      * Устанавливает следующий ID (для загрузки из файла)
      * @param id максимальный ID из загруженных элементов
      */
@@ -78,8 +70,6 @@ public class Person implements Comparable<Person> {
             nextId = id + 1;
         }
     }
-
-    // Геттеры и сеттеры с валидацией
 
     public Integer getId() {
         return id;
@@ -91,10 +81,10 @@ public class Person implements Comparable<Person> {
      */
     public void setId(Integer id) {
         if (id == null) {
-            throw new IllegalArgumentException("Поле id не может быть null");
+            throw new IllegalArgumentException("id не может быть null");
         }
         if (id <= 0) {
-            throw new IllegalArgumentException("Значение поля id должно быть больше 0");
+            throw new IllegalArgumentException("id должен быть > 0");
         }
         this.id = id;
     }
@@ -106,7 +96,6 @@ public class Person implements Comparable<Person> {
     /**
      * Устанавливает имя
      * @param name имя (не null, не пустое)
-     * @throws IllegalArgumentException если имя null или пустое
      */
     public void setName(String name) {
         if (name == null || name.trim().isEmpty()) {
@@ -122,7 +111,6 @@ public class Person implements Comparable<Person> {
     /**
      * Устанавливает координаты
      * @param coordinates координаты (не null)
-     * @throws IllegalArgumentException если coordinates null
      */
     public void setCoordinates(Coordinates coordinates) {
         if (coordinates == null) {
@@ -153,11 +141,10 @@ public class Person implements Comparable<Person> {
     /**
      * Устанавливает рост
      * @param height рост (должен быть > 0)
-     * @throws IllegalArgumentException если height <= 0
      */
     public void setHeight(float height) {
         if (height <= 0) {
-            throw new IllegalArgumentException("Рост должен быть больше 0");
+            throw new IllegalArgumentException("Рост должен быть > 0");
         }
         this.height = height;
     }
@@ -196,7 +183,6 @@ public class Person implements Comparable<Person> {
 
     @Override
     public int compareTo(Person other) {
-        // Сортировка по умолчанию - по имени
         return this.name.compareTo(other.name);
     }
 

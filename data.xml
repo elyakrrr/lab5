@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<persons>
+  <person>
+    <id>1</id>
+    <name>Rose</name>
+    <coordinates>
+      <x>10</x>
+      <y>20</y>
+    </coordinates>
+    <creationDate>2026-03-13</creationDate>
+    <height>175.5</height>
+    <birthday>1990-05-15</birthday>
+    <hairColor>BLUE</hairColor>
+    <nationality>JAPAN</nationality>
+    <location>
+      <x>15.5</x>
+      <y>100</y>
+      <name>Tokyo</name>
+    </location>
+  </person>
+</persons>

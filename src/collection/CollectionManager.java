@@ -42,6 +42,20 @@ public class CollectionManager {
     }
 
     /**
+     * @return размер коллекции
+     */
+    public int size() {
+        return collection.size();
+    }
+
+    /**
+     * @return true если коллекция пуста
+     */
+    public boolean isEmpty() {
+        return collection.isEmpty();
+    }
+
+    /**
      * @return все элементы коллекции
      */
     public HashSet<Person> getAll() {
@@ -58,6 +72,43 @@ public class CollectionManager {
     }
 
     /**
+     * Получает элемент по ID
+     * @param id ID элемента
+     * @return Optional с элементом или empty
+     */
+    public Optional<Person> getById(Integer id) {
+        if (id == null) return Optional.empty();
+        return collection.stream()
+                .filter(p -> id.equals(p.getId()))
+                .findFirst();
+    }
+
+    /**
+     * Проверяет наличие элемента с указанным ID
+     */
+    public boolean containsId(Integer id) {
+        if (id == null) return false;
+        return collection.stream()
+                .anyMatch(p -> id.equals(p.getId()));
+    }
+
+    /**
+     * @return минимальный элемент коллекции
+     */
+    public Optional<Person> getMin() {
+        return collection.stream()
+                .min(Person::compareTo);
+    }
+
+    /**
+     * @return максимальный элемент коллекции
+     */
+    public Optional<Person> getMax() {
+        return collection.stream()
+                .max(Person::compareTo);
+    }
+
+    /**
      * Добавляет новый элемент в коллекцию
      * @param person элемент для добавления
      * @return true если элемент добавлен
@@ -66,12 +117,26 @@ public class CollectionManager {
         if (person == null) {
             return false;
         }
-
         if (containsId(person.getId())) {
             person.setId(generateNewId());
         }
-
         return collection.add(person);
+    }
+
+    /**
+     * Добавляет элемент, если его день рождения раньше самого раннего в коллекции
+     */
+    public boolean addIfMin(Person person) {
+        if (person == null || person.getBirthday() == null) return false;
+
+        Optional<Person> oldest = collection.stream()
+                .filter(p -> p.getBirthday() != null)
+                .min(Comparator.comparing(Person::getBirthday));
+
+        if (oldest.isEmpty() || person.getBirthday().before(oldest.get().getBirthday())) {
+            return add(person);
+        }
+        return false;
     }
 
     /**
@@ -84,19 +149,13 @@ public class CollectionManager {
         if (id == null || newPerson == null) {
             return false;
         }
-
-        // Ищем существующий элемент
-        Optional<Person> existing = collection.stream()
-                .filter(p -> id.equals(p.getId()))
-                .findFirst();
-
+        Optional<Person> existing = getById(id);
         if (existing.isPresent()) {
             collection.remove(existing.get());
             newPerson.setId(id);
             return collection.add(newPerson);
         }
-
-        return false; // Элемент не найден
+        return false;
     }
 
     /**
@@ -106,8 +165,27 @@ public class CollectionManager {
      */
     public boolean removeById(Integer id) {
         if (id == null) return false;
-
         return collection.removeIf(p -> id.equals(p.getId()));
+    }
+
+    /**
+     * Удаляет все элементы с ростом больше заданного
+     */
+    public int removeGreater(Person person) {
+        if (person == null) return 0;
+        int initialSize = collection.size();
+        collection.removeIf(p -> p.getHeight() > person.getHeight());
+        return initialSize - collection.size();
+    }
+
+    /**
+     * Удаляет все элементы с ростом меньше заданного
+     */
+    public int removeLower(Person person) {
+        if (person == null) return 0;
+        int initialSize = collection.size();
+        collection.removeIf(p -> p.getHeight() < person.getHeight());
+        return initialSize - collection.size();
     }
 
     /**
@@ -118,81 +196,14 @@ public class CollectionManager {
     }
 
     /**
-     * @return размер коллекции
-     */
-    public int size() {
-        return collection.size();
-    }
-
-    /**
-     * Получает элемент по ID
-     * @param id ID элемента
-     * @return Optional с элементом или empty
-     */
-    public Optional<Person> getById(Integer id) {
-        if (id == null) return Optional.empty();
-
-        return collection.stream()
-                .filter(p -> id.equals(p.getId()))
-                .findFirst();
-    }
-
-    /**
-     * Проверяет наличие элемента с указанным ID
-     */
-    public boolean containsId(Integer id) {
-        if (id == null) return false;
-
-        return collection.stream()
-                .anyMatch(p -> id.equals(p.getId()));
-    }
-
-    /**
-     * Добавляет элемент, если он меньше минимального
-     */
-    public boolean addIfMin(Person person) {
-        if (person == null) return false;
-
-        Optional<Person> minPerson = collection.stream().min(Person::compareTo);
-
-        if (minPerson.isEmpty() || person.compareTo(minPerson.get()) < 0) {
-            return add(person);
-        }
-        return false;
-    }
-
-    /**
-     * Удаляет все элементы больше заданного
-     */
-    public int removeGreater(Person person) {
-        if (person == null) return 0;
-
-        int initialSize = collection.size();
-        collection.removeIf(p -> p.compareTo(person) > 0);
-        return initialSize - collection.size();
-    }
-
-    /**
-     * Удаляет все элементы меньше заданного
-     */
-    public int removeLower(Person person) {
-        if (person == null) return 0;
-
-        int initialSize = collection.size();
-        collection.removeIf(p -> p.compareTo(person) < 0);
-        return initialSize - collection.size();
-    }
-
-    /**
-     * Считает количество элементов с национальностью меньше заданной
+     * Считает количество элементов с национальностью, имеющей меньший порядковый номер в enum
      */
     public long countLessThanNationality(Country nationality) {
         if (nationality == null) return 0;
-
         return collection.stream()
                 .map(Person::getNationality)
                 .filter(Objects::nonNull)
-                .filter(n -> n.compareTo(nationality) < 0)
+                .filter(n -> n.ordinal() < nationality.ordinal())
                 .count();
     }
 
@@ -235,5 +246,51 @@ public class CollectionManager {
                 .mapToInt(Person::getId)
                 .max()
                 .ifPresent(Person::setNextId);
+    }
+
+    /**
+     * Валидирует всю коллекцию
+     * @return список ошибок
+     */
+    public List<String> validate() {
+        List<String> errors = new ArrayList<>();
+        for (Person person : collection) {
+            if (person == null) {
+                errors.add("Обнаружен null элемент");
+                continue;
+            }
+            try {
+                if (person.getId() == null || person.getId() <= 0) {
+                    errors.add("Элемент с некорректным ID: " + person);
+                }
+                long count = collection.stream()
+                        .filter(p -> p.getId().equals(person.getId()))
+                        .count();
+                if (count > 1) {
+                    errors.add("Обнаружены дубликаты ID: " + person.getId());
+                }
+            } catch (Exception e) {
+                errors.add("Ошибка валидации элемента: " + e.getMessage());
+            }
+        }
+        return errors;
+    }
+
+    @Override
+    public String toString() {
+        return String.format("CollectionManager{size=%d, type=HashSet<Person>}", collection.size());
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        CollectionManager that = (CollectionManager) o;
+        return Objects.equals(collection, that.collection);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(collection);
     }
 }

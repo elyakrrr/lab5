@@ -20,7 +20,7 @@ public class ShowCommand extends BaseCommand {
             return;
         }
 
-        System.out.println("\n=== Элементы коллекции ===");
+        System.out.println("*Элементы коллекции*");
         collectionManager.getSorted().forEach(System.out::println);
         System.out.println("Всего элементов: " + collectionManager.size());
     }
